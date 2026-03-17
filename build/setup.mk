@@ -8,7 +8,9 @@ endif
 $(shell cd build/manifest && $(GO) build -o ../bin/manifest)
 
 # Ensure that the deployment tools are compiled. Go's caching makes this quick.
+ifeq ($(wildcard build/deploy/.),build/deploy/.)
 $(shell cd build/deploy && $(GO) build -o ../bin/deploy)
+endif
 
 # Extract the plugin id from the manifest.
 PLUGIN_ID ?= $(shell build/bin/manifest id)

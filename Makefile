@@ -100,7 +100,7 @@ endif
 .PHONY: webapp
 webapp: webapp/.npminstall
 ifneq ($(HAS_WEBAPP),)
-	cd webapp && $(NPM) run build;
+	cd webapp && NODE_OPTIONS=--openssl-legacy-provider $(NPM) run build;
 endif
 
 ## Builds the webapp in debug mode, if it exists.
@@ -108,7 +108,7 @@ endif
 webapp-debug: webapp/.npminstall
 ifneq ($(HAS_WEBAPP),)
 	cd webapp && \
-	$(NPM) run debug;
+	NODE_OPTIONS=--openssl-legacy-provider $(NPM) run debug;
 endif
 
 ## Generates a tar bundle of the plugin for install.
@@ -131,7 +131,7 @@ ifneq ($(HAS_WEBAPP),)
 	mkdir -p dist/$(PLUGIN_ID)/webapp/dist;
 	cp -r webapp/dist/* dist/$(PLUGIN_ID)/webapp/dist/;
 endif
-	cd dist && tar -cvzf $(BUNDLE_NAME) $(PLUGIN_ID)
+	cd dist/$(PLUGIN_ID) && tar -cvzf ../$(BUNDLE_NAME) .
 
 	@echo plugin built at: dist/$(BUNDLE_NAME)
 
@@ -159,7 +159,7 @@ ifneq ($(HAS_SERVER),)
 	$(GO) test -v $(GO_TEST_FLAGS) ./server/...
 endif
 ifneq ($(HAS_WEBAPP),)
-	cd webapp && $(NPM) run fix && $(NPM) run test;
+	cd webapp && NODE_OPTIONS=--openssl-legacy-provider $(NPM) run fix && NODE_OPTIONS=--openssl-legacy-provider $(NPM) run test;
 endif
 
 ## Creates a coverage report for the server code.
