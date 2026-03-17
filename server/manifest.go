@@ -74,6 +74,22 @@ const manifestStr = `
         "help_text": "Optional. Overrides the default translation system prompt.",
         "placeholder": "",
         "default": null
+      },
+      {
+        "key": "EnableCache",
+        "display_name": "Enable Translation Cache:",
+        "type": "bool",
+        "help_text": "Cache successful translations in Mattermost plugin storage to avoid repeated Scaleway requests.",
+        "placeholder": "",
+        "default": true
+      },
+      {
+        "key": "CacheTTLSeconds",
+        "display_name": "Translation Cache TTL (seconds):",
+        "type": "number",
+        "help_text": "How long cached translations remain valid before Mattermost expires them.",
+        "placeholder": "",
+        "default": 604800
       }
     ]
   }

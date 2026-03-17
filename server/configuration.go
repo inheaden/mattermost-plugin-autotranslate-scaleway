@@ -12,6 +12,7 @@ const (
 	defaultScalewayModel       = "mistral-small-3.2-24b-instruct-2506"
 	defaultScalewayPrompt      = "You are a translation engine. Preserve meaning, tone, markdown, mentions, URLs, and line breaks. Return only valid JSON."
 	defaultScalewayTemperature = float64(0)
+	defaultCacheTTLSeconds     = 604800
 )
 
 // configuration captures the plugin's external configuration as exposed in the Mattermost server
@@ -30,6 +31,8 @@ type configuration struct {
 	ScalewaySystemPrompt string
 	ScalewayTemperature  float64
 	ScalewayMaxTokens    int
+	EnableCache          bool
+	CacheTTLSeconds      int
 
 	// disable plugin
 	disabled bool
@@ -46,6 +49,8 @@ func (c *configuration) Clone() *configuration {
 		ScalewaySystemPrompt: c.ScalewaySystemPrompt,
 		ScalewayTemperature:  c.ScalewayTemperature,
 		ScalewayMaxTokens:    c.ScalewayMaxTokens,
+		EnableCache:          c.EnableCache,
+		CacheTTLSeconds:      c.CacheTTLSeconds,
 		disabled:             c.disabled,
 	}
 }
@@ -80,6 +85,18 @@ func (c *configuration) getScalewaySystemPrompt() string {
 
 func (c *configuration) getScalewayTemperature() float64 {
 	return c.ScalewayTemperature
+}
+
+func (c *configuration) isCacheEnabled() bool {
+	return c.EnableCache
+}
+
+func (c *configuration) getCacheTTLSeconds() int {
+	if c.CacheTTLSeconds <= 0 {
+		return defaultCacheTTLSeconds
+	}
+
+	return c.CacheTTLSeconds
 }
 
 // getConfiguration retrieves the active configuration under lock, making it safe to use

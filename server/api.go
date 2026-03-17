@@ -29,20 +29,31 @@ type ThreadTranslationResponse struct {
 }
 
 func (p *Plugin) translatePost(post *model.Post, source, target string) (*TranslatedMessage, error) {
-	output, translateErr := p.translateWithScaleway(post.Message, source, target)
-	if translateErr != nil {
-		return nil, translateErr
-	}
-
-	return &TranslatedMessage{
+	translated := &TranslatedMessage{
 		ID:             post.Id + source + target + strconv.FormatInt(post.UpdateAt, 10),
 		PostID:         post.Id,
 		SourceLanguage: source,
 		SourceText:     post.Message,
 		TargetLanguage: target,
-		TranslatedText: output.TranslatedText,
 		UpdateAt:       post.UpdateAt,
-	}, nil
+	}
+
+	cached, err := p.getCachedTranslation(translated)
+	if err == nil && cached != nil {
+		return cached, nil
+	}
+
+	output, translateErr := p.translateWithScaleway(post.Message, source, target)
+	if translateErr != nil {
+		return nil, translateErr
+	}
+
+	translated.TranslatedText = output.TranslatedText
+	if err := p.setCachedTranslation(translated); err != nil {
+		p.API.LogWarn("Failed to cache translation", "post_id", post.Id, "error", err.Error())
+	}
+
+	return translated, nil
 }
 
 func writeAPIError(w http.ResponseWriter, err *APIErrorResponse) {
