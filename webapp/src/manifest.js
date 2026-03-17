@@ -3,8 +3,8 @@
 const manifest = JSON.parse(`
 {
     "id": "autotranslate",
-    "name": "Autotranslate",
-    "description": "Autotranslate plugin for Mattermost 5.22 and later.",
+    "name": "Translate",
+    "description": "Translate plugin for Mattermost 5.22 and later.",
     "homepage_url": "https://github.com/mattermost/mattermost-plugin-autotranslate",
     "support_url": "https://github.com/mattermost/mattermost-plugin-autotranslate/issues",
     "release_notes_url": "https://github.com/mattermost/mattermost-plugin-autotranslate/releases/tag/v0.4.0",

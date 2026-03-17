@@ -1,4 +1,4 @@
-## Mattermost Autotranslation Plugin (Beta)
+## Mattermost Translate Plugin (Beta)
 
 [![Build Status](https://img.shields.io/circleci/project/github/mattermost/mattermost-plugin-autotranslate/master)](https://circleci.com/gh/mattermost/mattermost-plugin-autotranslate)
 [![Code Coverage](https://img.shields.io/codecov/c/github/mattermost/mattermost-plugin-autotranslate/master)](https://codecov.io/gh/mattermost/mattermost-plugin-autotranslate)
@@ -7,17 +7,17 @@
 
 **Maintainer:** [@saturninoabril](https://github.com/saturninoabril)
 
-### Autotranslation plugin for Mattermost.
+### Translation plugin for Mattermost.
 
-Message autotranslation is powered by Scaleway Generative APIs using a configured inference model for on-demand translation.
+Message translation is powered by Scaleway Generative APIs using a configured inference model for on-demand translation.
 
 ### Feature
 * __Translate__ option available at dropdown menu of each regular post.
-* __Slash commands__ to change user settings using `/autotranslate` slash command
-    * __Check user info__ by issuing `/autotranslate info` to see current user setting
-    * __Turn on/off__ translation by issuing `/autotranslate [on|off]`
-    * __Change source language__ translation by initiating `/autotranslate source [language code]`
-    * __Change target language__ translation by initiating `/autotranslate target [language code]`
+* __Slash commands__ to change user settings using `/translate`
+    * __Check user info__ by issuing `/translate info` to see current user setting
+    * __Turn on/off__ translation by issuing `/translate [on|off]`
+    * __Change source language__ translation by initiating `/translate source [language code]`
+    * __Change target language__ translation by initiating `/translate target [language code]`
 * __Supported Languages and its codes__ are validated against the plugin's built-in language-code list.
 
 ### Installation
@@ -29,15 +29,15 @@ __Requires Mattermost 5.22 or higher__
     2. In Mattermost, go to the System Console -> Plugins -> Management
     3. Upload the plugin
 2. Create a Scaleway API key with access to Generative APIs and choose a model
-3. In Mattermost, go to System Console -> Plugins -> Autotranslate
+3. In Mattermost, go to System Console -> Plugins -> Translate
         * Fill in the Scaleway Secret Key
         * Optionally fill in the Scaleway Project ID
         * Set the Scaleway Model
         * Optionally override the Base URL or System Prompt
 4. Enable the plugin
-    * Go to System Console -> Plugins -> Management and click "Enable" underneath the Autotranslate plugin
+    * Go to System Console -> Plugins -> Management and click "Enable" underneath the Translate plugin
 5. Test it out
-    * In Mattermost, run the slash command `/autotranslate on` and see if `Translate` option becomes available at dropdown menu of a post.
+    * In Mattermost, run the slash command `/translate on` and see if `Translate` option becomes available at dropdown menu of a post.
 
 ## Developing 
 

@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	translateUsername = "Autotranslate Plugin"
+	translateUsername = "Translate Plugin"
 	translateIconURL  = "https://docs.mattermost.com/_images/icon-76x76.png"
 	enLanguage        = "en"
 	autoLanguage      = "auto"
@@ -20,12 +20,12 @@ const (
 const commandHelp = `
 This plugin is powered by Scaleway Generative APIs and a configured inference model to translate text on demand.
 
-* |/autotranslate on| - Add an option to translate a post with the default setting of Auto as source and English as target.
-* |/autotranslate off| - Remove an option to translate a post
-* |/autotranslate info| - Show user info on this plugin
-* |/autotranslate source [value]| - Update your autotranslation source
+* |/translate on| - Add an option to translate a post with the default setting of Auto as source and English as target.
+* |/translate off| - Remove an option to translate a post
+* |/translate info| - Show user info on this plugin
+* |/translate source [value]| - Update your translation source
   * |value| can be any of the plugin-supported language codes or "auto" to automatically detect language used.
-* |/autotranslate target [value]| - Update your autotranslation target
+* |/translate target [value]| - Update your translation target
   * |value| can be any of the plugin-supported language codes.
 * |Language codes|: This plugin ships with a built-in language-code list for slash-command validation.
   `
@@ -111,14 +111,14 @@ var languageCodes = map[string]string{
 
 func (p *Plugin) registerCommands() error {
 	if err := p.API.RegisterCommand(&model.Command{
-		Trigger:          "autotranslate",
-		DisplayName:      "Autotranslate",
-		Description:      "Mattermost Autotranslation Plugin",
+		Trigger:          "translate",
+		DisplayName:      "Translate",
+		Description:      "Mattermost Translate Plugin",
 		AutoComplete:     true,
 		AutoCompleteDesc: "Available commands: info, on, off, source, target, help",
 		AutoCompleteHint: "[command]",
 	}); err != nil {
-		return errors.Wrap(err, "failed to register autotranslate command")
+		return errors.Wrap(err, "failed to register translate command")
 	}
 
 	return nil
@@ -136,10 +136,10 @@ func getCommandResponse(responseType, text string) *model.CommandResponse {
 
 func setUserInfoCommandResponse(userInfo *UserInfo, err *APIErrorResponse, action string) (*model.CommandResponse, *model.AppError) {
 	var actionMapping = map[string]interface{}{
-		"source": "setting up language source of autotranslation plugin",
-		"target": "setting up language target of autotranslation plugin",
-		"on":     "turning on the autotranslation plugin",
-		"off":    "turning off the autotranslation plugin",
+		"source": "setting up language source of the translate plugin",
+		"target": "setting up language target of the translate plugin",
+		"on":     "turning on the translate plugin",
+		"off":    "turning off the translate plugin",
 		"info":   "getting user information",
 	}
 
@@ -151,19 +151,19 @@ func setUserInfoCommandResponse(userInfo *UserInfo, err *APIErrorResponse, actio
 
 		text := fmt.Sprintf("An error occurred %s. `%s`", actionMapping[action], errorMessage)
 		if err.ID == apiErrorNoRecordFound {
-			text = "No record found. If not yet turned on for the first time, try `/autotranslate on` to enable."
+			text = "No record found. If not yet turned on for the first time, try `/translate on` to enable."
 		}
 
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	}
 
 	text := fmt.Sprintf(
-		"Successfully updated!\nYour autotranslation plugin settings:\n * Active: `%s`\n * Language: `source: %s`, `target: %s`\n",
+		"Successfully updated!\nYour translate plugin settings:\n * Active: `%s`\n * Language: `source: %s`, `target: %s`\n",
 		userInfo.getActivatedString(), languageCodes[userInfo.SourceLanguage], languageCodes[userInfo.TargetLanguage],
 	)
 
 	if action == "off" {
-		text = "Autotranslate plugin is turned off."
+		text = "Translate plugin is turned off."
 	}
 
 	return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
@@ -182,26 +182,26 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		param = split[2]
 	}
 
-	if command != "/autotranslate" {
+	if command != "/translate" {
 		return nil, nil
 	}
 
 	var text = ""
 	if action == "" || action == "help" {
-		text = "###### Mattermost Autotranslate Plugin - Slash Command Help\n" + strings.Replace(commandHelp, "|", "`", -1)
+		text = "###### Mattermost Translate Plugin - Slash Command Help\n" + strings.Replace(commandHelp, "|", "`", -1)
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	}
 
 	userInfo, err := p.getUserInfo(args.UserId)
 	if userInfo == nil && action != "on" {
-		text = "No record found. Try `/autotranslate on` to enable."
+		text = "No record found. Try `/translate on` to enable."
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	}
 
 	switch action {
 	case "info":
 		text = fmt.Sprintf(
-			"Your autotranslation plugin settings:\n * Active: `%s`\n * Language: `source: %s`, `target: %s`\n",
+			"Your translate plugin settings:\n * Active: `%s`\n * Language: `source: %s`, `target: %s`\n",
 			userInfo.getActivatedString(), languageCodes[userInfo.SourceLanguage], languageCodes[userInfo.TargetLanguage],
 		)
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
@@ -216,7 +216,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		return setUserInfoCommandResponse(userInfo, err, action)
 	case "off":
 		if userInfo == nil {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "No record found. If not yet turned on for the first time, try `/autotranslate on` to enable. Otherwise, your record is lost for unknown reason."), nil
+			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "No record found. If not yet turned on for the first time, try `/translate on` to enable. Otherwise, your record is lost for unknown reason."), nil
 		}
 
 		userInfo.Activated = false
@@ -224,7 +224,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		return setUserInfoCommandResponse(userInfo, err, action)
 	case "source":
 		if userInfo == nil {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "No record found. If not yet turned on for the first time, try `/autotranslate on` to enable. Otherwise, your record is lost for unknown reason."), nil
+			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "No record found. If not yet turned on for the first time, try `/translate on` to enable. Otherwise, your record is lost for unknown reason."), nil
 		}
 
 		if param == "" {
@@ -240,7 +240,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		return setUserInfoCommandResponse(userInfo, err, action)
 	case "target":
 		if userInfo == nil {
-			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "No record found. If not yet turned on for the first time, try `/autotranslate on` to enable."), nil
+			return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, "No record found. If not yet turned on for the first time, try `/translate on` to enable."), nil
 		}
 
 		if param == "" {
@@ -259,7 +259,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		err = p.setUserInfo(userInfo)
 		return setUserInfoCommandResponse(userInfo, err, action)
 	default:
-		text = "###### Mattermost Autotranslate Plugin - Slash Command Help\n" + strings.Replace(commandHelp, "|", "`", -1)
+		text = "###### Mattermost Translate Plugin - Slash Command Help\n" + strings.Replace(commandHelp, "|", "`", -1)
 		return getCommandResponse(model.COMMAND_RESPONSE_TYPE_EPHEMERAL, text), nil
 	}
 }
