@@ -14,6 +14,14 @@ class ClientClass {
         return this.doGet(this.url + '/go' + buildQueryString({post_id: postId, source, target}));
     }
 
+    getThread = async (postId, source, target) => {
+        return this.doGet(this.url + '/thread' + buildQueryString({post_id: postId, source, target}));
+    }
+
+    getThreadPosts = async (postId, source, target, postIds) => {
+        return this.doGet(this.url + '/thread' + buildQueryString({post_id: postId, source, target, post_ids: postIds.join(',')}));
+    }
+
     getInfo = async () => {
         return this.doGet(`${this.url}/get_info`);
     }

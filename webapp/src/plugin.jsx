@@ -4,11 +4,13 @@ import {getPost} from 'mattermost-redux/selectors/entities/posts';
 
 import PostMessageAttachment from './components/post_message_attachment';
 import TranslateMenuItem from './components/translate_menu_item';
+import TranslateThreadMenuItem from './components/translate_thread_menu_item';
 
 import PluginId from './plugin_id';
 
 import {
     getTranslatedMessage,
+    getTranslatedThread,
     getInfo,
     websocketInfoChange,
 } from './actions';
@@ -27,6 +29,16 @@ export default class AutoTranslatePlugin {
         registry.registerPostDropdownMenuAction(
             <TranslateMenuItem/>,
             (postId) => store.dispatch(getTranslatedMessage(postId)),
+            (postId) => {
+                const state = store.getState();
+                const post = getPost(state, postId);
+                const userInfo = getUserInfo(state);
+                return post && post.type === '' && userInfo && userInfo.activated;
+            },
+        );
+        registry.registerPostDropdownMenuAction(
+            <TranslateThreadMenuItem/>,
+            (postId) => store.dispatch(getTranslatedThread(postId)),
             (postId) => {
                 const state = store.getState();
                 const post = getPost(state, postId);

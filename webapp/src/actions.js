@@ -1,4 +1,4 @@
-import {getPost} from 'mattermost-redux/selectors/entities/posts';
+import {getPost, makeGetPostsForThread} from 'mattermost-redux/selectors/entities/posts';
 import {getCurrentUserId} from 'mattermost-redux/selectors/entities/users';
 
 import {
@@ -14,6 +14,29 @@ import {
 } from './action_types';
 
 import Client from './clients';
+
+const getPostsForThread = makeGetPostsForThread();
+
+const getActiveUserTranslation = (state) => {
+    const userInfo = getUserInfo(state);
+    const {
+        activated,
+        source_language: source,
+        target_language: target,
+        user_id: userId,
+    } = userInfo;
+
+    if (!activated) {
+        return null;
+    }
+
+    const currentUserId = getCurrentUserId(state);
+    if (currentUserId !== userId) {
+        return null;
+    }
+
+    return {source, target};
+};
 
 export const getInfo = () => {
     return async (dispatch) => {
@@ -31,23 +54,11 @@ export const getInfo = () => {
 export const getTranslatedMessage = (postId) => {
     return async (dispatch, getState) => {
         const state = getState();
-
-        const userInfo = getUserInfo(state);
-        const {
-            activated,
-            source_language: source,
-            target_language: target,
-            user_id: userId,
-        } = userInfo;
-
-        if (!activated) {
+        const userTranslation = getActiveUserTranslation(state);
+        if (!userTranslation) {
             return {data: null};
         }
-
-        const currentUserId = getCurrentUserId(state);
-        if (currentUserId !== userId) {
-            return {data: null};
-        }
+        const {source, target} = userTranslation;
 
         const post = getPost(getState(), postId);
         if (!post) {
@@ -75,6 +86,82 @@ export const getTranslatedMessage = (postId) => {
 
         dispatch(saveTranslatedPost({...result, show: true}));
         dispatch(saveTranslation(result));
+
+        return {success: true};
+    };
+};
+
+export const getTranslatedThread = (postId) => {
+    return async (dispatch, getState) => {
+        let state = getState();
+        const userTranslation = getActiveUserTranslation(state);
+        if (!userTranslation) {
+            return {data: null};
+        }
+        const {source, target} = userTranslation;
+
+        const post = getPost(getState(), postId);
+        if (!post) {
+            return {data: null};
+        }
+
+        const threadPosts = getPostsForThread(state, {rootId: postId});
+
+        const cachedTranslations = [];
+        const missingPostIds = [];
+
+        threadPosts.forEach((threadPost) => {
+            if (!threadPost || threadPost.type !== '' || !threadPost.message) {
+                return;
+            }
+
+            const translationId = `${threadPost.id}${source}${target}${threadPost.update_at}`;
+            const translation = getTranslations(state)[translationId];
+            if (translation) {
+                cachedTranslations.push(translation);
+                return;
+            }
+
+            missingPostIds.push(threadPost.id);
+        });
+
+        cachedTranslations.forEach((translation) => {
+            dispatch(saveTranslatedPost({...translation, show: true}));
+        });
+
+        if (threadPosts.length > 1 && missingPostIds.length === 0) {
+            return {success: true};
+        }
+
+        let response;
+        try {
+            if (threadPosts.length > 1) {
+                response = await Client.getThreadPosts(postId, source, target, missingPostIds);
+            } else {
+                response = await Client.getThread(postId, source, target);
+            }
+        } catch (error) {
+            const errorText = error.response && error.response.text ? error.response.text.split('\n')[0] : '';
+            const text = errorText.replace(/[\n\t\r]/g, ' ');
+            const errorData = {errorMessage: text, show: true, post_id: postId};
+
+            dispatch(saveTranslatedPost(errorData));
+            return {error: true};
+        }
+
+        response.translations.forEach((result) => {
+            dispatch(saveTranslatedPost({...result, show: true}));
+            dispatch(saveTranslation(result));
+        });
+
+        if (response.failures.length > 0) {
+            const failedPost = response.failures[0];
+            dispatch(saveTranslatedPost({
+                errorMessage: failedPost.message,
+                show: true,
+                post_id: failedPost.post_id,
+            }));
+        }
 
         return {success: true};
     };

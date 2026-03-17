@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
+	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 )
 
@@ -14,6 +16,33 @@ type APIErrorResponse struct {
 	ID         string `json:"id"`
 	Message    string `json:"message"`
 	StatusCode int    `json:"status_code"`
+}
+
+type ThreadTranslationFailure struct {
+	PostID  string `json:"post_id"`
+	Message string `json:"message"`
+}
+
+type ThreadTranslationResponse struct {
+	Translations []*TranslatedMessage       `json:"translations"`
+	Failures     []ThreadTranslationFailure `json:"failures"`
+}
+
+func (p *Plugin) translatePost(post *model.Post, source, target string) (*TranslatedMessage, error) {
+	output, translateErr := p.translateWithScaleway(post.Message, source, target)
+	if translateErr != nil {
+		return nil, translateErr
+	}
+
+	return &TranslatedMessage{
+		ID:             post.Id + source + target + strconv.FormatInt(post.UpdateAt, 10),
+		PostID:         post.Id,
+		SourceLanguage: source,
+		SourceText:     post.Message,
+		TargetLanguage: target,
+		TranslatedText: output.TranslatedText,
+		UpdateAt:       post.UpdateAt,
+	}, nil
 }
 
 func writeAPIError(w http.ResponseWriter, err *APIErrorResponse) {
@@ -32,6 +61,8 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 	switch path := r.URL.Path; path {
 	case "/api/go":
 		p.getGo(w, r)
+	case "/api/thread":
+		p.getThread(w, r)
 	case "/api/get_info":
 		p.getInfo(w, r)
 	case "/api/set_info":
@@ -80,23 +111,91 @@ func (p *Plugin) getGo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	output, translateErr := p.translateWithScaleway(post.Message, source, target)
+	translated, translateErr := p.translatePost(post, source, target)
 	if translateErr != nil {
 		http.Error(w, translateErr.Error(), http.StatusBadRequest)
 		return
 	}
 
-	translated := TranslatedMessage{
-		ID:             postID + source + target + strconv.FormatInt(post.UpdateAt, 10),
-		PostID:         postID,
-		SourceLanguage: source,
-		SourceText:     post.Message,
-		TargetLanguage: target,
-		TranslatedText: output.TranslatedText,
-		UpdateAt:       post.UpdateAt,
+	resp, _ := json.Marshal(translated)
+	w.Write(resp)
+}
+
+func (p *Plugin) getThread(w http.ResponseWriter, r *http.Request) {
+	userID := r.Header.Get("Mattermost-User-ID")
+	if userID == "" {
+		http.Error(w, "Not authorized to translate thread", http.StatusUnauthorized)
+		return
 	}
 
-	resp, _ := json.Marshal(translated)
+	postID := r.URL.Query().Get("post_id")
+	if len(postID) != 26 {
+		http.Error(w, "Invalid parameter: post_id", http.StatusBadRequest)
+		return
+	}
+
+	source := r.URL.Query().Get("source")
+	if len(source) < 2 || len(source) > 5 {
+		http.Error(w, "Invalid parameter: source", http.StatusBadRequest)
+		return
+	}
+	if languageCodes[source] == "" {
+		http.Error(w, "Unsupported parameter: source", http.StatusBadRequest)
+		return
+	}
+
+	target := r.URL.Query().Get("target")
+	if len(target) < 2 || len(target) > 5 {
+		http.Error(w, "Invalid parameter: target", http.StatusBadRequest)
+		return
+	}
+	if target == autoLanguage || languageCodes[target] == "" {
+		http.Error(w, "Unsupported parameter: target", http.StatusBadRequest)
+		return
+	}
+
+	postList, err := p.API.GetPostThread(postID)
+	if err != nil || postList == nil {
+		http.Error(w, "No thread to translate", http.StatusBadRequest)
+		return
+	}
+
+	requestedPostIDs := map[string]bool{}
+	postIDsParam := r.URL.Query().Get("post_ids")
+	if postIDsParam != "" {
+		for _, requestedPostID := range strings.Split(postIDsParam, ",") {
+			if len(requestedPostID) == 26 {
+				requestedPostIDs[requestedPostID] = true
+			}
+		}
+	}
+
+	response := ThreadTranslationResponse{
+		Translations: make([]*TranslatedMessage, 0, len(postList.Order)),
+		Failures:     make([]ThreadTranslationFailure, 0),
+	}
+	for _, threadPostID := range postList.Order {
+		post := postList.Posts[threadPostID]
+		if post == nil || post.Type != "" || post.Message == "" {
+			continue
+		}
+		if len(requestedPostIDs) > 0 && !requestedPostIDs[threadPostID] {
+			continue
+		}
+
+		translated, translateErr := p.translatePost(post, source, target)
+		if translateErr != nil {
+			response.Failures = append(response.Failures, ThreadTranslationFailure{
+				PostID:  threadPostID,
+				Message: translateErr.Error(),
+			})
+			continue
+		}
+
+		response.Translations = append(response.Translations, translated)
+	}
+
+	resp, _ := json.Marshal(response)
 	w.Write(resp)
 }
 
