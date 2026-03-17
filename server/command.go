@@ -18,21 +18,19 @@ const (
 )
 
 const commandHelp = `
-This plugin is powered by Amazon Translate which is a text translation service that uses advanced machine learning technologies to provide high-quality translation on demand. Amazon Translate can translate text between the languages listed in its [website](https://docs.aws.amazon.com/translate/latest/dg/what-is.html).
+This plugin is powered by Scaleway Generative APIs and a configured inference model to translate text on demand.
 
 * |/autotranslate on| - Add an option to translate a post with the default setting of Auto as source and English as target.
 * |/autotranslate off| - Remove an option to translate a post
 * |/autotranslate info| - Show user info on this plugin
 * |/autotranslate source [value]| - Update your autotranslation source
-  * |value| can be any of the [supported language codes](https://docs.aws.amazon.com/translate/latest/dg/what-is.html) or "auto" to automatically detect language used.
+  * |value| can be any of the plugin-supported language codes or "auto" to automatically detect language used.
 * |/autotranslate target [value]| - Update your autotranslation target
-  * |value| can be any of the [supported language codes](https://docs.aws.amazon.com/translate/latest/dg/what-is.html).
-* |Language codes|: See [AWS Translate supported languages](https://docs.aws.amazon.com/translate/latest/dg/what-is.html)
+  * |value| can be any of the plugin-supported language codes.
+* |Language codes|: This plugin ships with a built-in language-code list for slash-command validation.
   `
 
-// See https://docs.aws.amazon.com/translate/latest/dg/what-is.html for updated supported languages.
-// Below is hard-coded but would be nice if AWS SDK supports getting the list programmatically
-// which is not the case currently.
+// Below is plugin-maintained to keep slash-command validation and prompt generation stable.
 var languageCodes = map[string]string{
 	"auto":  "Auto",
 	"af":    "Afrikaans",

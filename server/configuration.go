@@ -2,8 +2,16 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
+)
+
+const (
+	defaultScalewayBaseURL     = "https://api.scaleway.ai/v1"
+	defaultScalewayModel       = "mistral-small-3.2-24b-instruct-2506"
+	defaultScalewayPrompt      = "You are a translation engine. Preserve meaning, tone, markdown, mentions, URLs, and line breaks. Return only valid JSON."
+	defaultScalewayTemperature = float64(0)
 )
 
 // configuration captures the plugin's external configuration as exposed in the Mattermost server
@@ -15,14 +23,13 @@ import (
 // strategy used in this plugin is to guard a pointer to the configuration, and clone the entire
 // struct whenever it changes. You may replace this with whatever strategy you choose.
 type configuration struct {
-	// AWS access key
-	AWSAccessKeyID string
-
-	// AWS secret key
-	AWSSecretAccessKey string
-
-	// AWS region with "us-east-1" as default
-	AWSRegion string
+	ScalewaySecretKey    string
+	ScalewayProjectID    string
+	ScalewayModel        string
+	ScalewayBaseURL      string
+	ScalewaySystemPrompt string
+	ScalewayTemperature  float64
+	ScalewayMaxTokens    int
 
 	// disable plugin
 	disabled bool
@@ -32,11 +39,47 @@ type configuration struct {
 // your configuration has no reference types.
 func (c *configuration) Clone() *configuration {
 	return &configuration{
-		AWSAccessKeyID:     c.AWSAccessKeyID,
-		AWSSecretAccessKey: c.AWSSecretAccessKey,
-		AWSRegion:          c.AWSRegion,
-		disabled:           c.disabled,
+		ScalewaySecretKey:    c.ScalewaySecretKey,
+		ScalewayProjectID:    c.ScalewayProjectID,
+		ScalewayModel:        c.ScalewayModel,
+		ScalewayBaseURL:      c.ScalewayBaseURL,
+		ScalewaySystemPrompt: c.ScalewaySystemPrompt,
+		ScalewayTemperature:  c.ScalewayTemperature,
+		ScalewayMaxTokens:    c.ScalewayMaxTokens,
+		disabled:             c.disabled,
 	}
+}
+
+func (c *configuration) getScalewayBaseURL() string {
+	if c.ScalewayBaseURL != "" {
+		return strings.TrimRight(c.ScalewayBaseURL, "/")
+	}
+
+	if c.ScalewayProjectID != "" {
+		return fmt.Sprintf("https://api.scaleway.ai/%s/v1", c.ScalewayProjectID)
+	}
+
+	return defaultScalewayBaseURL
+}
+
+func (c *configuration) getScalewayModel() string {
+	if c.ScalewayModel == "" {
+		return defaultScalewayModel
+	}
+
+	return c.ScalewayModel
+}
+
+func (c *configuration) getScalewaySystemPrompt() string {
+	if c.ScalewaySystemPrompt == "" {
+		return defaultScalewayPrompt
+	}
+
+	return c.ScalewaySystemPrompt
+}
+
+func (c *configuration) getScalewayTemperature() float64 {
+	return c.ScalewayTemperature
 }
 
 // getConfiguration retrieves the active configuration under lock, making it safe to use
@@ -98,16 +141,16 @@ func (p *Plugin) setEnabled(enabled bool) {
 // IsValid validates plugin configuration
 func (p *Plugin) IsValid() error {
 	configuration := p.getConfiguration()
-	if configuration.AWSAccessKeyID == "" {
-		return fmt.Errorf("Must have AWS Access Key ID")
+	if configuration.ScalewaySecretKey == "" {
+		return fmt.Errorf("Must have Scaleway Secret Key")
 	}
 
-	if configuration.AWSSecretAccessKey == "" {
-		return fmt.Errorf("Must have AWS Secret Access Key")
+	if configuration.getScalewayModel() == "" {
+		return fmt.Errorf("Must have Scaleway Model")
 	}
 
-	if configuration.AWSRegion == "" {
-		configuration.AWSRegion = "us-east-1"
+	if configuration.getScalewayBaseURL() == "" {
+		return fmt.Errorf("Must have Scaleway Base URL")
 	}
 
 	return nil

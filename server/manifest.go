@@ -36,28 +36,44 @@ const manifestStr = `
     "footer": "",
     "settings": [
       {
-        "key": "AWSAccessKeyID",
-        "display_name": "AWS Access Key ID:",
+        "key": "ScalewaySecretKey",
+        "display_name": "Scaleway Secret Key:",
         "type": "text",
-        "help_text": "The access key ID from AWS.",
+        "help_text": "The Scaleway API key used as the Bearer token for Generative APIs.",
         "placeholder": "",
         "default": null
       },
       {
-        "key": "AWSSecretAccessKey",
-        "display_name": "AWS Secret Access Key:",
+        "key": "ScalewayProjectID",
+        "display_name": "Scaleway Project ID:",
         "type": "text",
-        "help_text": "The secret access key from AWS.",
+        "help_text": "Optional. Used to scope the API base URL to a specific Scaleway project.",
         "placeholder": "",
         "default": null
       },
       {
-        "key": "AWSRegion",
-        "display_name": "AWS Region:",
+        "key": "ScalewayModel",
+        "display_name": "Scaleway Model:",
         "type": "text",
-        "help_text": "The region from AWS.",
+        "help_text": "The Scaleway model ID used for translation requests.",
         "placeholder": "",
-        "default": "us-east-1"
+        "default": "mistral-small-3.2-24b-instruct-2506"
+      },
+      {
+        "key": "ScalewayBaseURL",
+        "display_name": "Scaleway Base URL:",
+        "type": "text",
+        "help_text": "Optional. Leave empty to use the default Scaleway Generative APIs URL or the project-scoped URL when Project ID is set.",
+        "placeholder": "",
+        "default": null
+      },
+      {
+        "key": "ScalewaySystemPrompt",
+        "display_name": "Scaleway System Prompt:",
+        "type": "text",
+        "help_text": "Optional. Overrides the default translation system prompt.",
+        "placeholder": "",
+        "default": null
       }
     ]
   }

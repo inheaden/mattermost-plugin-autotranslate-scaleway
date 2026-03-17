@@ -9,7 +9,7 @@
 
 ### Autotranslation plugin for Mattermost.
 
-Message autotranslation is powered by Amazon Translate which is a text translation service that uses advanced machine learning technologies to provide high-quality translation on demand. Amazon Translate can translate text between the languages listed in its [website](https://docs.aws.amazon.com/translate/latest/dg/what-is.html).
+Message autotranslation is powered by Scaleway Generative APIs using a configured inference model for on-demand translation.
 
 ### Feature
 * __Translate__ option available at dropdown menu of each regular post.
@@ -18,7 +18,7 @@ Message autotranslation is powered by Amazon Translate which is a text translati
     * __Turn on/off__ translation by issuing `/autotranslate [on|off]`
     * __Change source language__ translation by initiating `/autotranslate source [language code]`
     * __Change target language__ translation by initiating `/autotranslate target [language code]`
-* __Supported Languages and its codes__ can be found at [Amazon Translate website](https://docs.aws.amazon.com/translate/latest/dg/what-is.html). 
+* __Supported Languages and its codes__ are validated against the plugin's built-in language-code list.
 
 ### Installation
 
@@ -28,9 +28,12 @@ __Requires Mattermost 5.22 or higher__
     1. Download the latest version of the plugin from the GitHub releases page
     2. In Mattermost, go to the System Console -> Plugins -> Management
     3. Upload the plugin
-2. Spin up Amazon Translate https://aws.amazon.com/translate/
+2. Create a Scaleway API key with access to Generative APIs and choose a model
 3. In Mattermost, go to System Console -> Plugins -> Autotranslate
-        * Fill in the AWS Access Key ID, Secret Access Key and Region
+        * Fill in the Scaleway Secret Key
+        * Optionally fill in the Scaleway Project ID
+        * Set the Scaleway Model
+        * Optionally override the Base URL or System Prompt
 4. Enable the plugin
     * Go to System Console -> Plugins -> Management and click "Enable" underneath the Autotranslate plugin
 5. Test it out

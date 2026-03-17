@@ -7,11 +7,6 @@ import (
 	"strconv"
 
 	"github.com/mattermost/mattermost-server/v5/plugin"
-
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/translate"
 )
 
 // APIErrorResponse as standard response error
@@ -64,10 +59,18 @@ func (p *Plugin) getGo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid parameter: source", http.StatusBadRequest)
 		return
 	}
+	if languageCodes[source] == "" {
+		http.Error(w, "Unsupported parameter: source", http.StatusBadRequest)
+		return
+	}
 
 	target := r.URL.Query().Get("target")
 	if len(target) < 2 || len(target) > 5 {
 		http.Error(w, "Invalid parameter: target", http.StatusBadRequest)
+		return
+	}
+	if target == autoLanguage || languageCodes[target] == "" {
+		http.Error(w, "Unsupported parameter: target", http.StatusBadRequest)
 		return
 	}
 
@@ -77,26 +80,9 @@ func (p *Plugin) getGo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	configuration := p.getConfiguration()
-	sess := session.Must(session.NewSession())
-	creds := credentials.NewStaticCredentials(configuration.AWSAccessKeyID, configuration.AWSSecretAccessKey, "")
-	_, awsErr := creds.Get()
-	if awsErr != nil {
-		http.Error(w, "Bad credentials", http.StatusForbidden)
-		return
-	}
-
-	svc := translate.New(sess, aws.NewConfig().WithCredentials(creds).WithRegion(configuration.AWSRegion))
-
-	input := translate.TextInput{
-		SourceLanguageCode: &source,
-		TargetLanguageCode: &target,
-		Text:               &post.Message,
-	}
-
-	output, awsErr := svc.Text(&input)
-	if awsErr != nil {
-		http.Error(w, awsErr.Error(), http.StatusBadRequest)
+	output, translateErr := p.translateWithScaleway(post.Message, source, target)
+	if translateErr != nil {
+		http.Error(w, translateErr.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -106,7 +92,7 @@ func (p *Plugin) getGo(w http.ResponseWriter, r *http.Request) {
 		SourceLanguage: source,
 		SourceText:     post.Message,
 		TargetLanguage: target,
-		TranslatedText: *output.TranslatedText,
+		TranslatedText: output.TranslatedText,
 		UpdateAt:       post.UpdateAt,
 	}
 
