@@ -61,20 +61,24 @@ test('should render translated message', async () => {
     };
 
     const {container} = render(
-        <TranslatedMessage
-            translation={translation}
-            activated={true}
-            hideTranslatedMessage={hideTranslatedMessage}
-            onHeightChange={onHeightChange}
-        />,
+        <div className='post' data-postid={translation.post_id}>
+            <div className='post-message__text'>{'Original body'}</div>
+            <TranslatedMessage
+                translation={translation}
+                activated={true}
+                hideTranslatedMessage={hideTranslatedMessage}
+                onHeightChange={onHeightChange}
+            />
+        </div>,
     );
     expect(container).toMatchSnapshot();
     expect(screen.getByText(translation.translated_text)).toBeInTheDocument();
-    expect(screen.getByText(/See translation/i)).toBeInTheDocument();
+    expect(screen.getByText(/Translated/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText(/close/i));
+    fireEvent.click(screen.getByText(/See original/i));
     expect(hideTranslatedMessage).toHaveBeenCalledTimes(1);
     expect(hideTranslatedMessage).toHaveBeenCalledWith(translation.post_id);
     expect(onHeightChange).toHaveBeenCalledTimes(1);
     expect(onHeightChange).toHaveBeenCalledWith(1);
+    expect(screen.getByText('Original body')).toBeInTheDocument();
 });
