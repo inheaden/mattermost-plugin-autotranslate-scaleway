@@ -65,7 +65,7 @@ govet:
 ifneq ($(HAS_SERVER),)
 	@echo Running govet
 	@# Workaround because you can't install binaries without adding them to go.mod
-	env GO111MODULE=off $(GO) get golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
+	$(GO) install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@v0.21.0
 	$(GO) vet ./...
 	$(GO) vet -vettool=$(GOPATH)/bin/shadow ./...
 	@echo Govet success
