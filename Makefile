@@ -9,6 +9,14 @@ MM_UTILITIES_DIR ?= ../mattermost-utilities
 
 export GO111MODULE=on
 
+# Set NODE_OPTIONS for OpenSSL compatibility with Node.js 17+.
+# The --openssl-legacy-provider flag is required for older webpack versions but is
+# not supported (and not needed) on Node.js 14–16.
+NODE_MAJOR_VERSION := $(shell node -e "console.log(parseInt(process.versions.node))" 2>/dev/null || echo 0)
+ifeq ($(shell test $(NODE_MAJOR_VERSION) -ge 17 && echo yes),yes)
+export NODE_OPTIONS := --openssl-legacy-provider
+endif
+
 # You can include assets this directory into the bundle. This can be e.g. used to include profile pictures.
 ASSETS_DIR ?= assets
 
@@ -100,7 +108,7 @@ endif
 .PHONY: webapp
 webapp: webapp/.npminstall
 ifneq ($(HAS_WEBAPP),)
-	cd webapp && NODE_OPTIONS=--openssl-legacy-provider $(NPM) run build;
+	cd webapp && $(NPM) run build;
 endif
 
 ## Builds the webapp in debug mode, if it exists.
@@ -108,7 +116,7 @@ endif
 webapp-debug: webapp/.npminstall
 ifneq ($(HAS_WEBAPP),)
 	cd webapp && \
-	NODE_OPTIONS=--openssl-legacy-provider $(NPM) run debug;
+	$(NPM) run debug;
 endif
 
 ## Generates a tar bundle of the plugin for install.
@@ -159,7 +167,7 @@ ifneq ($(HAS_SERVER),)
 	$(GO) test -v $(GO_TEST_FLAGS) ./server/...
 endif
 ifneq ($(HAS_WEBAPP),)
-	cd webapp && NODE_OPTIONS=--openssl-legacy-provider $(NPM) run fix && NODE_OPTIONS=--openssl-legacy-provider $(NPM) run test;
+	cd webapp && $(NPM) run fix && $(NPM) run test;
 endif
 
 ## Creates a coverage report for the server code.

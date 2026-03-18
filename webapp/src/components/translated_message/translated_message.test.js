@@ -61,7 +61,10 @@ test('should render translated message', async () => {
     };
 
     const {container} = render(
-        <div className='post' data-postid={translation.post_id}>
+        <div
+            className='post'
+            data-postid={translation.post_id}
+        >
             <div className='post-message__text'>{'Original body'}</div>
             <TranslatedMessage
                 translation={translation}
