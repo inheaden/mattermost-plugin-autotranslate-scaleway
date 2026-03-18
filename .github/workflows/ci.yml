@@ -6,7 +6,85 @@ on:
       - master
       - main
 
+permissions:
+  contents: read
+
 jobs:
-  plugin-ci:
-    uses: mattermost/actions-workflows/.github/workflows/community-plugin-ci.yml@139a051e8651e6246e3764fe342297b73120e590
-    secrets: inherit
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ci/checkout-repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ci/setup-go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: ci/setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: ci/check-style
+        run: make check-style
+
+      - name: ci/tidy-mod
+        run: go mod tidy -v
+
+      - name: ci/diff-mod
+        run: |
+          git --no-pager diff --exit-code go.mod go.sum || (echo "Please run \"go mod tidy\" and commit the changes in go.mod and go.sum." && exit 1)
+
+      - name: ci/apply
+        run: make apply
+
+      - name: ci/diff-manifests
+        run: |
+          git --no-pager diff --exit-code *manifest.* || (echo "Please run \"make apply\" and commit the changes in the generated manifests." && exit 1)
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ci/checkout-repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ci/setup-go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: ci/setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: ci/test
+        run: make test
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ci/checkout-repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ci/setup-go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: ci/setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: ci/build
+        run: make dist
+        env:
+          CGO_ENABLED: "0"

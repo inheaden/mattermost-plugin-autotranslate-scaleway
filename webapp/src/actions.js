@@ -93,7 +93,7 @@ export const getTranslatedMessage = (postId) => {
 
 export const getTranslatedThread = (postId) => {
     return async (dispatch, getState) => {
-        let state = getState();
+        const state = getState();
         const userTranslation = getActiveUserTranslation(state);
         if (!userTranslation) {
             return {data: null};
